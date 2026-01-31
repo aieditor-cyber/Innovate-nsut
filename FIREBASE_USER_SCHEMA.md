@@ -1,4 +1,4 @@
-# Firebase User Schema Documentation
+<!-- # Firebase User Schema Documentation
 
 ## Overview
 This document defines the user data structure for TerraVision application in Firebase Firestore.
@@ -309,4 +309,30 @@ Consider adding for future features:
 - `twoFactorAuth`: 2FA enabled status
 - `socialLinks`: GitHub, LinkedIn, etc.
 - `organizationId`: If adding multi-org support
+ -->
 
+
+
+
+{
+  "id": "user_77a9f9c0",
+  "email": "yash.planner@terravision.io",
+  "account": {
+    "isEmailVerified": true,
+    "joinedAt": "2024-10-15T10:30:00Z",
+    "lastLogin": "2026-02-01T12:00:00Z"
+  },
+  "preferences": {
+    "language": "en",
+    "theme": "dark" 
+  },
+  "profile": {
+    "bio": "Urban planning lead.",
+    "city": "New Delhi",
+    "country": "IN",
+    "firstName": "Yash",
+    "lastName": "Sharma",
+    "role": "Urban Planner",
+    "state": "Delhi"
+  }
+}
