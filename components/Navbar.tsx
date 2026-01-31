@@ -12,11 +12,8 @@ const Navbar: React.FC = () => {
   return (
     <header className={`sticky top-0 z-50 w-full ${navClass}`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
-            <span className="material-symbols-outlined">eco</span>
-          </div>
-          <span className="text-lg font-bold tracking-tight text-text-main">Sustainable City Planner</span>
+        <Link to="/" className="flex items-center">
+          <img src="logo.jpg" alt="TerraVision" className="h-10 w-auto object-contain" />
         </Link>
         <nav className="hidden md:flex items-center gap-8">
           <Link to="/map" className={`text-sm font-medium hover:text-primary transition-colors ${location.pathname === '/map' ? 'text-primary' : 'text-text-main'}`}>Interactive Map</Link>

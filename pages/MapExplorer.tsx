@@ -44,10 +44,15 @@ const layersData: Layer[] = [
 const MapExplorer: React.FC = () => {
   const [layers, setLayers] = useState<Layer[]>(layersData);
   const [selectedProject, setSelectedProject] = useState<boolean>(false);
-  const [showComparisonModal, setShowComparisonModal] = useState<boolean>(false);
+  
+  // Analysis Mode State
+  const [isAnalysisMode, setIsAnalysisMode] = useState(false);
+  const [regionAnalysis, setRegionAnalysis] = useState<any>(null);
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupsRef = useRef<{ [key: string]: L.LayerGroup }>({});
+  const analysisLayerRef = useRef<L.LayerGroup | null>(null);
 
   const toggleLayer = (id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, active: !l.active } : l));
@@ -55,7 +60,6 @@ const MapExplorer: React.FC = () => {
 
   // Initialize Map
   useEffect(() => {
-    // Small timeout to ensure container has size before init
     const timer = setTimeout(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
         const map = L.map(mapContainerRef.current, {
@@ -63,7 +67,6 @@ const MapExplorer: React.FC = () => {
             attributionControl: false
         }).setView(MOCK_LOCATIONS.center, 14);
 
-        // Add CartoDB Voyager tiles (clean, light map style)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
@@ -80,12 +83,13 @@ const MapExplorer: React.FC = () => {
             hotspot: L.layerGroup().addTo(map),
             corridor: L.layerGroup().addTo(map),
             shade: L.layerGroup().addTo(map),
-            project: L.layerGroup().addTo(map) // For the project pin
+            project: L.layerGroup().addTo(map) 
         };
+        
+        // Initialize Analysis Layer
+        analysisLayerRef.current = L.layerGroup().addTo(map);
 
         // Add data to layer groups
-        
-        // EV Stations
         MOCK_LOCATIONS.ev_stations.forEach(loc => {
             const icon = L.divIcon({
             className: 'custom-div-icon',
@@ -96,34 +100,31 @@ const MapExplorer: React.FC = () => {
             L.marker(loc, { icon }).addTo(layerGroupsRef.current.ev);
         });
 
-        // Trees
         MOCK_LOCATIONS.trees.forEach(loc => {
             L.circle(loc, {
             radius: 40,
             color: 'transparent',
-            fillColor: '#16a34a', // green-600
+            fillColor: '#16a34a',
             fillOpacity: 0.6
             }).addTo(layerGroupsRef.current.tree);
         });
 
-        // Solar
         MOCK_LOCATIONS.solar_potential.forEach(loc => {
             L.circle(loc, {
             radius: 60,
             color: 'transparent',
-            fillColor: '#eab308', // yellow-500
+            fillColor: '#eab308',
             fillOpacity: 0.5
             }).addTo(layerGroupsRef.current.solar);
         });
 
-        // Hotspots (Heatmap simulation with circles)
         [
             [28.6110, 77.2050], [28.6180, 77.2150]
         ].forEach((loc: any) => {
             L.circle(loc, {
             radius: 300,
             color: 'transparent',
-            fillColor: '#ef4444', // red-500
+            fillColor: '#ef4444',
             fillOpacity: 0.2
             }).addTo(layerGroupsRef.current.hotspot);
         });
@@ -136,6 +137,13 @@ const MapExplorer: React.FC = () => {
             opacity: 0.8
         }).addTo(layerGroupsRef.current.corridor);
         
+        // Click on line to open details
+        corridorLine.on('click', () => {
+             setSelectedProject(true);
+             setRegionAnalysis(null); // Close region drawer if open
+             map.flyTo(MOCK_LOCATIONS.project, 15, { animate: true });
+        });
+        
         // Halo for corridor
         L.polyline(MOCK_LOCATIONS.corridor_path, {
             color: '#11d432',
@@ -144,7 +152,7 @@ const MapExplorer: React.FC = () => {
             lineCap: 'round'
         }).addTo(layerGroupsRef.current.corridor);
 
-        // Project Pin (Interactive)
+        // Project Pin
         const projectIcon = L.divIcon({
             className: 'custom-div-icon',
             html: `<div class="relative flex items-center justify-center w-8 h-8 cursor-pointer group">
@@ -160,23 +168,92 @@ const MapExplorer: React.FC = () => {
         const projectMarker = L.marker(MOCK_LOCATIONS.project, { icon: projectIcon }).addTo(layerGroupsRef.current.project);
         projectMarker.on('click', () => {
             setSelectedProject(true);
-            // Center map on project slightly offset
+            setRegionAnalysis(null);
             map.flyTo([MOCK_LOCATIONS.project[0], MOCK_LOCATIONS.project[1] - 0.005], 15, { animate: true });
         });
 
-        // Force a resize calculation to ensure tiles load correctly
         setTimeout(() => {
             map.invalidateSize();
         }, 100);
         }
     }, 100);
     
-    // Cleanup
     return () => {
         clearTimeout(timer);
-      // mapInstanceRef.current?.remove(); // Strict mode might double init, but simple ref check handles it.
     };
   }, []);
+
+  // Analysis Mode Logic
+  useEffect(() => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      
+      const handleMapClick = (e: L.LeafletMouseEvent) => {
+          if (isAnalysisMode && analysisLayerRef.current) {
+              // Clear previous
+              analysisLayerRef.current.clearLayers();
+              
+              const { lat, lng } = e.latlng;
+              
+              // Draw selection box/polygon
+              const bounds = [
+                 [lat + 0.004, lng - 0.004],
+                 [lat + 0.004, lng + 0.004],
+                 [lat - 0.004, lng + 0.004],
+                 [lat - 0.004, lng - 0.004]
+              ];
+              
+              L.polygon(bounds as any, { 
+                  color: '#2563eb', 
+                  weight: 2, 
+                  fillColor: '#3b82f6', 
+                  fillOpacity: 0.15, 
+                  dashArray: '6, 6' 
+              }).addTo(analysisLayerRef.current);
+              
+              L.marker([lat, lng], {
+                  icon: L.divIcon({
+                      className: 'custom-div-icon',
+                      html: `<div class="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-md animate-bounce"></div>`,
+                      iconSize: [16, 16]
+                  })
+              }).addTo(analysisLayerRef.current);
+
+              // Set mock data
+              setRegionAnalysis({
+                  coordinates: [lat, lng],
+                  name: `Sector ${Math.floor(Math.random() * 20) + 1}`,
+                  heatScore: Math.floor(Math.random() * 30) + 60, // 60-90
+                  greenScore: Math.floor(Math.random() * 40) + 20, // 20-60
+                  stats: {
+                    trees: Math.floor(Math.random() * 200) + 50,
+                    ev: Math.floor(Math.random() * 12),
+                    solar: Math.floor(Math.random() * 50) + 10,
+                    area: (Math.random() * 2 + 0.5).toFixed(1) // km2
+                  },
+                  recommendations: [
+                     { title: "Increase Tree Canopy", impact: "High", icon: "forest", desc: "Plant 200+ native shade trees to reduce surface temps by 3°C." },
+                     { title: "Cool Roof Retrofit", impact: "Medium", icon: "roofing", desc: "Apply reflective coating to industrial roofs in this sector." },
+                     { title: "Permeable Pavements", impact: "Medium", icon: "water_drop", desc: "Replace 15% of asphalt with permeable materials." }
+                  ]
+              });
+              
+              setSelectedProject(false); // Close project drawer if open
+          }
+      };
+
+      map.on('click', handleMapClick);
+      
+      // Update cursor
+      if (mapContainerRef.current) {
+          mapContainerRef.current.style.cursor = isAnalysisMode ? 'crosshair' : 'grab';
+      }
+
+      return () => {
+          map.off('click', handleMapClick);
+      }
+  }, [isAnalysisMode]);
+
 
   // Update Layers Visibility
   useEffect(() => {
@@ -197,8 +274,6 @@ const MapExplorer: React.FC = () => {
       }
     });
     
-    // Always show project marker if corridor is active? Or just always.
-    // Let's keep project marker always visible for now or linked to Corridor
     const projectGroup = layerGroupsRef.current['project'];
     const corridorActive = layers.find(l => l.id === 'corridor')?.active;
     if (corridorActive) {
@@ -215,6 +290,13 @@ const MapExplorer: React.FC = () => {
       <div className="relative flex-1 w-full overflow-hidden">
         {/* Map Container */}
         <div ref={mapContainerRef} className="absolute inset-0 z-0 h-full w-full" />
+        
+        {/* Analyze Mode Overlay Hint */}
+        {isAnalysisMode && !regionAnalysis && (
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[450] bg-blue-600 text-white px-6 py-2 rounded-full shadow-lg font-bold animate-bounce">
+                Click anywhere on the map to analyze region
+            </div>
+        )}
 
         {/* Floating Sidebar */}
         <div className="absolute left-6 top-6 bottom-6 z-[400] w-80 flex flex-col gap-4 pointer-events-none">
@@ -265,42 +347,36 @@ const MapExplorer: React.FC = () => {
                     </label>
                 ))}
             </div>
-
-            {/* Stats Footer */}
-            <div className="p-4 bg-slate-50/50 border-t border-slate-100">
-                <div className="flex justify-between items-center text-xs text-slate-500 mb-2">
-                    <span>Current View Stats</span>
-                    <span className="material-symbols-outlined text-[16px]">info</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white p-2 rounded border border-slate-100">
-                        <div className="text-xl font-bold text-slate-800">68%</div>
-                        <div className="text-[10px] uppercase text-slate-400 font-bold">Green Score</div>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-100">
-                        <div className="text-xl font-bold text-slate-800">24°C</div>
-                        <div className="text-[10px] uppercase text-slate-400 font-bold">Avg Temp</div>
-                    </div>
-                </div>
-            </div>
             </div>
         </div>
 
         {/* Right Controls */}
         <div className="absolute right-6 top-6 z-[400] flex flex-col items-end gap-4 pointer-events-none">
             <button 
+                className={`pointer-events-auto group relative flex items-center justify-center overflow-hidden rounded-full h-12 px-6 shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ${isAnalysisMode ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-white text-slate-900 hover:bg-slate-50'}`}
+                onClick={() => {
+                    setIsAnalysisMode(!isAnalysisMode);
+                    if(!isAnalysisMode) {
+                        setRegionAnalysis(null);
+                        setSelectedProject(false);
+                    }
+                }}
+            >
+                <span className="material-symbols-outlined mr-2 text-[20px]">{isAnalysisMode ? 'close' : 'manage_search'}</span>
+                <span className="text-sm font-bold tracking-wide">{isAnalysisMode ? 'Exit Analysis Mode' : 'Analyze Region'}</span>
+            </button>
+
+            <button 
             className="pointer-events-auto group relative flex items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-primary hover:bg-green-500 text-slate-900 shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
             onClick={() => {
-                // Mock AI Suggestion
                 toggleLayer('corridor');
                 if (!layers.find(l=>l.id==='corridor')?.active) {
-                    // If turning on, fly to project
                     mapInstanceRef.current?.flyTo(MOCK_LOCATIONS.project, 14, { duration: 1.5 });
                 }
             }}
             >
                 <span className="material-symbols-outlined mr-2 text-[20px] animate-pulse">auto_awesome</span>
-                <span className="text-sm font-bold tracking-wide">Suggest Green Corridors (AI)</span>
+                <span className="text-sm font-bold tracking-wide">Suggest Green Corridors</span>
             </button>
             
             <div className="pointer-events-auto flex flex-col bg-white/90 backdrop-blur-md rounded-lg shadow-lg border border-slate-200 overflow-hidden mt-4">
@@ -333,112 +409,138 @@ const MapExplorer: React.FC = () => {
             </div>
         </div>
 
-        {/* Project Details Modal (Right Drawer) */}
+        {/* 1. PROJECT DETAILS / STREET VIEW CARD */}
         <div 
-            className={`absolute top-4 right-4 bottom-4 w-[440px] z-[500] flex flex-col bg-surface-light shadow-2xl rounded-2xl border border-gray-200 overflow-hidden transition-transform duration-300 ease-in-out ${selectedProject ? 'translate-x-0' : 'translate-x-[120%]'}`}
+            className={`absolute top-4 right-4 bottom-4 w-[480px] z-[500] flex flex-col bg-surface-light shadow-2xl rounded-2xl border border-gray-200 overflow-hidden transition-transform duration-300 ease-in-out ${selectedProject ? 'translate-x-0' : 'translate-x-[120%]'}`}
         >
-            <div className="flex items-start justify-between p-6 pb-2 shrink-0">
-                <div className="flex flex-col gap-2">
-                <div className="flex h-6 shrink-0 items-center justify-center gap-x-1.5 rounded-full bg-primary/20 pl-2.5 pr-2.5 w-fit">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <p className="text-primary text-xs font-bold uppercase tracking-wider leading-normal">Planned Phase</p>
-                </div>
-                <h1 className="text-slate-900 text-[28px] font-bold leading-tight">Downtown Riverwalk Extension</h1>
-                </div>
-                <button onClick={() => setSelectedProject(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <span className="material-symbols-outlined text-[24px]">close</span>
+            <div className="relative h-64 w-full bg-slate-900 shrink-0">
+                <BeforeAfterSlider 
+                    beforeImage="https://lh3.googleusercontent.com/aida-public/AB6AXuAFH6zu0Et-9Sr7LNGZ9Q4TJ_qqqYygiv3BHgpi6kDsXvunnapFePQ-7YY19y85eCxta4UU9sbrqOAvWxcVpiqoYaQomwpcrWvBEOTfsn0hC2P0hMIYdyQCs_p24K-8CH_OrfQ2-pycbIpol6uk6A9kWM4Az9Lw83mqbVXwa2eq_H4aR8Bmt1UTGuaz-qyKeHojAGWqMmjxEODYUYI_K731styzmAQjkkw9Z2J7oAovwIx_qsmocc1nVhKGws5DaMITrJFGykpcOg"
+                    afterImage="https://lh3.googleusercontent.com/aida-public/AB6AXuA_zSknFTIPjy5_EZF6yIggEP5tC0qAKaRybv0DHDRPJ0mN2tjaNZy5vYJ5xUw-ARmRmfR30EUJn8TG2ZBK5KZTB6PkGoBgxm0vU4ZI_Kitnb_u2u8FqAvmp9RoAlpZd84URks9ck-b0yKlbqbryYMFllNwgoQ03QcYZWiOE7_QP5SObleVBq368VbCSv3T0JtCB7q9-IcYjx10yoj5HU1nb1YDDiRv0KumaP_iNeY0V2LM6RyPpYxXEIQkbcwA6sWjv-BBOa4SRg"
+                    labelBefore="Current"
+                    labelAfter="AI Proposed"
+                />
+                <button onClick={() => setSelectedProject(false)} className="absolute top-4 right-4 p-2 bg-black/50 text-white hover:bg-black/70 rounded-full backdrop-blur-sm transition-colors z-30">
+                   <span className="material-symbols-outlined text-[20px]">close</span>
                 </button>
+                <div className="absolute bottom-4 left-4 z-30">
+                    <span className="px-3 py-1 bg-primary text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-lg">Street View AI</span>
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
-                <div className="py-4">
-                <button 
-                    onClick={() => setShowComparisonModal(true)}
-                    className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-4 bg-primary hover:bg-[#0ebf2d] transition-colors text-[#0d1b10] gap-2 text-sm font-bold shadow-md shadow-primary/20"
-                >
-                    <span className="material-symbols-outlined text-[20px]">compare_arrows</span>
-                    <span>Compare Before / After</span>
-                </button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="col-span-1 aspect-square rounded-xl overflow-hidden border border-gray-200 relative group cursor-pointer">
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIu2MIzWJCAZqKMH8Ag1zyo1eHSo3ERCiVDMMDzUb-1PUcxcU7yhdkXY_NHXib8EfMsj2ebnm6z9rROebt4xzQjVXQstMXn-As2M6yel8Zz3ikxWa9a0sGBu0FLI3q6MgNO2kP1JrtJ27KH8vH6iscBXhPFFuBLTk4ISoTGTzVdFQVUWRAgIxDJsvD9lvLo8ODzb6AOxneqXVYHXKGesPuQoVdR2mqSnvAWeiW3thuutkOTXRHEbkOS9cfr216dywsou09XHZvWw" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="map detail"/>
-                </div>
-                <div className="col-span-2 text-sm text-gray-600 font-normal leading-relaxed">
-                    This project transforms the former industrial railway along the river into a bio-diverse pedestrian greenway, connecting the North District to the City Center.
-                </div>
-                </div>
-
-                <hr className="border-gray-100 mb-6"/>
-
-                {/* Metrics */}
-                <div className="flex flex-col items-center justify-center mb-8">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-4">Overall Eco-Impact</h3>
-                <div className="relative size-40 rounded-full bg-[conic-gradient(#11d432_87%,#e2e8f0_0)] shadow-inner flex items-center justify-center">
-                    <div className="bg-white size-32 rounded-full flex flex-col items-center justify-center shadow-lg">
-                        <span className="text-4xl font-bold text-slate-900">87</span>
-                        <span className="text-xs font-medium text-gray-400">/ 100</span>
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="flex flex-col gap-2 mb-6">
+                    <div className="flex items-center gap-2">
+                         <h1 className="text-slate-900 text-2xl font-bold leading-tight">Green Corridor Phase 1</h1>
+                         <span className="material-symbols-outlined text-green-500">verified</span>
                     </div>
-                </div>
-                <p className="text-primary text-sm font-medium mt-3 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[18px]">trending_up</span> High Impact
-                </p>
+                    <p className="text-sm text-gray-500 font-medium">Proposed transformation for West 4th Avenue connector.</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                    <MetricCard icon="forest" label="Trees Added" value="+145" subValue="+12% vs last plan" subColor="text-primary" />
-                    <MetricCard icon="thermostat" label="Cooling" value="-2.4°C" subValue="Heat island reduction" subColor="text-blue-500" iconBg="bg-blue-100" iconColor="text-blue-500" />
-                    <MetricCard icon="air" label="Air Quality" value="Good" subValue="AQI improved by 15%" subColor="text-primary" iconBg="bg-purple-100" iconColor="text-purple-500" />
-                    <MetricCard icon="directions_walk" label="Walkability" value="92" subValue="Walker's Paradise" subColor="text-orange-500" iconBg="bg-orange-100" iconColor="text-orange-500" />
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                    <MetricCard icon="forest" label="Trees" value="+145" subValue="Native Species" subColor="text-green-600" />
+                    <MetricCard icon="thermostat" label="Cooling" value="-2.4°C" subValue="Surface Temp" subColor="text-blue-500" iconBg="bg-blue-100" iconColor="text-blue-500" />
                 </div>
+                
+                <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Project Highlights</h3>
+                <div className="space-y-3">
+                    <HighlightRow icon="directions_bike" title="Protected Cycle Lane" desc="2.5km of dedicated lanes connecting north to south." />
+                    <HighlightRow icon="water_drop" title="Stormwater Management" desc="Bioswales integrated into medians to reduce runoff." />
+                    <HighlightRow icon="solar_power" title="Smart Lighting" desc="Solar-powered adaptive street lights." />
+                </div>
+                
+                <button className="w-full mt-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined">download</span> Download Proposal PDF
+                </button>
             </div>
         </div>
 
-        {/* Comparison Modal Overlay */}
-        {showComparisonModal && (
-            <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900">Proposed Green Corridor Transformation</h2>
-                        <p className="text-sm text-gray-500 flex items-center gap-1"><span className="material-symbols-outlined text-sm">location_on</span> West 4th Avenue • Sector 7</p>
-                    </div>
-                    <button onClick={() => setShowComparisonModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                        <span className="material-symbols-outlined text-gray-500">close</span>
-                    </button>
-                </div>
-                
-                <div className="p-6 flex-1 overflow-y-auto">
-                    <div className="aspect-video w-full rounded-lg overflow-hidden mb-8">
-                        <BeforeAfterSlider 
-                        beforeImage="https://lh3.googleusercontent.com/aida-public/AB6AXuAFH6zu0Et-9Sr7LNGZ9Q4TJ_qqqYygiv3BHgpi6kDsXvunnapFePQ-7YY19y85eCxta4UU9sbrqOAvWxcVpiqoYaQomwpcrWvBEOTfsn0hC2P0hMIYdyQCs_p24K-8CH_OrfQ2-pycbIpol6uk6A9kWM4Az9Lw83mqbVXwa2eq_H4aR8Bmt1UTGuaz-qyKeHojAGWqMmjxEODYUYI_K731styzmAQjkkw9Z2J7oAovwIx_qsmocc1nVhKGws5DaMITrJFGykpcOg"
-                        afterImage="https://lh3.googleusercontent.com/aida-public/AB6AXuA_zSknFTIPjy5_EZF6yIggEP5tC0qAKaRybv0DHDRPJ0mN2tjaNZy5vYJ5xUw-ARmRmfR30EUJn8TG2ZBK5KZTB6PkGoBgxm0vU4ZI_Kitnb_u2u8FqAvmp9RoAlpZd84URks9ck-b0yKlbqbryYMFllNwgoQ03QcYZWiOE7_QP5SObleVBq368VbCSv3T0JtCB7q9-IcYjx10yoj5HU1nb1YDDiRv0KumaP_iNeY0V2LM6RyPpYxXEIQkbcwA6sWjv-BBOa4SRg"
-                        labelBefore="Current State"
-                        labelAfter="AI Proposal"
-                        />
-                    </div>
-                    
-                    <h3 className="font-bold text-lg mb-4">Impact Analysis</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <ImpactStat icon="thermostat" label="Heat" value="-4.5°C" sub="-12% avg" isPositive={true} />
-                        <ImpactStat icon="beach_access" label="Shade" value="45%" sub="30% gain" isPositive={true} />
-                        <ImpactStat icon="water_drop" label="Water" value="1200 L" sub="100% gain" isPositive={true} />
-                        <ImpactStat icon="park" label="Trees" value="12" sub="12 new" isPositive={true} />
-                        <ImpactStat icon="air" label="AQI" value="42" sub="Good" isPositive={true} />
-                    </div>
-                </div>
+        {/* 2. REGION ANALYSIS DRAWER */}
+        <div 
+            className={`absolute top-4 right-4 bottom-4 w-[400px] z-[500] flex flex-col bg-surface-light shadow-2xl rounded-2xl border border-gray-200 overflow-hidden transition-transform duration-300 ease-in-out ${regionAnalysis ? 'translate-x-0' : 'translate-x-[120%]'}`}
+        >
+             <div className="bg-blue-600 p-6 text-white shrink-0 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-10 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                 <div className="relative z-10">
+                     <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-2 bg-white/20 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-sm">analytics</span> AI Analysis
+                        </div>
+                        <button onClick={() => setRegionAnalysis(null)} className="p-1 hover:bg-white/20 rounded-full transition-colors"><span className="material-symbols-outlined">close</span></button>
+                     </div>
+                     <h2 className="text-2xl font-bold mb-1">{regionAnalysis?.name || "Region Analysis"}</h2>
+                     <p className="text-blue-100 text-sm">Based on satellite & sensor data</p>
+                 </div>
+             </div>
 
-                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-                    <span className="text-sm text-gray-500 flex items-center gap-2"><span className="material-symbols-outlined text-sm">info</span> AI model v2.4 • Last updated today</span>
-                    <div className="flex gap-3">
-                        <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold hover:bg-gray-50 flex items-center gap-2"><span className="material-symbols-outlined text-sm">download</span> Download Image</button>
-                        <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 flex items-center gap-2"><span className="material-symbols-outlined text-sm">auto_fix_high</span> Regenerate View</button>
-                    </div>
-                </div>
-            </div>
-            </div>
-        )}
+             <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+                 {regionAnalysis && (
+                     <>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col items-center justify-center gap-1">
+                                <span className="text-3xl font-black text-slate-800">{regionAnalysis.heatScore}</span>
+                                <span className="text-xs font-bold text-red-500 uppercase">Heat Risk</span>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col items-center justify-center gap-1">
+                                <span className="text-3xl font-black text-slate-800">{regionAnalysis.greenScore}%</span>
+                                <span className="text-xs font-bold text-green-500 uppercase">Green Cover</span>
+                            </div>
+                        </div>
+
+                        {/* REGION COUNTS SECTION */}
+                        <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-gray-500">inventory_2</span> Region Assets
+                        </h3>
+                        <div className="grid grid-cols-4 gap-2 mb-6 border-b border-gray-200 pb-6">
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="material-symbols-outlined text-green-600 mb-1">forest</span>
+                                <span className="text-lg font-bold text-slate-800">{regionAnalysis.stats.trees}</span>
+                                <span className="text-[10px] text-gray-400 uppercase">Trees</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="material-symbols-outlined text-blue-600 mb-1">ev_station</span>
+                                <span className="text-lg font-bold text-slate-800">{regionAnalysis.stats.ev}</span>
+                                <span className="text-[10px] text-gray-400 uppercase">EVs</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="material-symbols-outlined text-yellow-600 mb-1">solar_power</span>
+                                <span className="text-lg font-bold text-slate-800">{regionAnalysis.stats.solar}</span>
+                                <span className="text-[10px] text-gray-400 uppercase">Solar</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="material-symbols-outlined text-purple-600 mb-1">square_foot</span>
+                                <span className="text-lg font-bold text-slate-800">{regionAnalysis.stats.area}</span>
+                                <span className="text-[10px] text-gray-400 uppercase">km²</span>
+                            </div>
+                        </div>
+
+                        <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary">auto_awesome</span> AI Recommendations
+                        </h3>
+                        
+                        <div className="space-y-3">
+                            {regionAnalysis.recommendations.map((rec: any, idx: number) => (
+                                <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:border-primary/30 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-primary bg-primary/10 p-1 rounded text-lg">{rec.icon}</span>
+                                            <span className="font-bold text-slate-800 text-sm">{rec.title}</span>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${rec.impact === 'High' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700'}`}>{rec.impact} Impact</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 leading-relaxed pl-8">{rec.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="mt-6 bg-blue-50 border border-blue-100 p-4 rounded-xl">
+                            <p className="text-xs text-blue-800 font-medium text-center">Selecting this zone for intervention could reduce local temperatures by an estimated 1.5°C.</p>
+                        </div>
+                     </>
+                 )}
+             </div>
+        </div>
+
       </div>
     </div>
   );
@@ -457,18 +559,14 @@ const MetricCard = ({ icon, label, value, subValue, subColor, iconBg = "bg-prima
     </div>
 );
 
-const ImpactStat = ({ icon, label, value, sub, isPositive }: any) => (
-   <div className="flex flex-col gap-2 rounded-xl p-4 border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all">
-       <div className="flex items-center gap-2 text-gray-500 mb-1">
-           <span className="material-symbols-outlined text-[20px]">{icon}</span>
-           <p className="text-xs font-medium uppercase tracking-wider">{label}</p>
-       </div>
-       <p className="text-slate-900 text-2xl font-bold">{value}</p>
-       <div className={`flex items-center gap-1 text-xs font-medium w-fit px-2 py-0.5 rounded ${isPositive ? 'text-primary bg-green-50' : 'text-red-500 bg-red-50'}`}>
-           <span className="material-symbols-outlined text-[14px]">{isPositive ? 'arrow_upward' : 'arrow_downward'}</span>
-           {sub}
-       </div>
-   </div>
+const HighlightRow = ({ icon, title, desc }: any) => (
+    <div className="flex gap-3 items-start p-3 hover:bg-gray-50 rounded-lg transition-colors">
+        <span className="material-symbols-outlined text-gray-400 mt-0.5">{icon}</span>
+        <div>
+            <h4 className="text-sm font-bold text-slate-800">{title}</h4>
+            <p className="text-xs text-gray-500 leading-snug">{desc}</p>
+        </div>
+    </div>
 );
 
 export default MapExplorer;
