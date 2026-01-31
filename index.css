@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-primary: #11d432;
+    --color-background-light: #f6f8f6;
+    --color-background-dark: #102213;
+    --color-surface-light: #ffffff;
+    --color-surface-dark: #1a2e1e;
+    --color-text-main: #0d1b10;
+    --color-text-muted: #4c9a59;
+
+    --font-display: "Space Grotesk", "sans-serif";
+    --font-body: "Noto Sans", "sans-serif";
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to sure everything still looks the same as it did with v3.
+*/
+@layer base {
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
