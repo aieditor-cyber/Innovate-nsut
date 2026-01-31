@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 
 const Landing: React.FC = () => {
   return (
-    <div className="flex min-h-screen flex-col bg-background-light text-text-main font-display">
+    <div className="flex min-h-screen flex-col bg-background-light dark:bg-background-dark text-text-main font-display">
       <Navbar />
       <main className="flex-1">
         {/* Hero Section */}
@@ -27,7 +27,7 @@ const Landing: React.FC = () => {
                     <span>Explore the Map</span>
                     <span className="material-symbols-outlined">map</span>
                   </Link>
-                  <button className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[#cfe7d3] bg-white/50 px-8 text-base font-bold backdrop-blur-sm hover:bg-white/80 transition-all duration-200">
+                  <button className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[#cfe7d3] dark:border-[#2a4d31] bg-white/50 dark:bg-surface-dark/50 px-8 text-base font-bold text-text-main dark:text-text-main backdrop-blur-sm hover:bg-white/80 dark:hover:bg-surface-dark/80 transition-all duration-200">
                     <span className="material-symbols-outlined">play_circle</span>
                     <span>Watch Demo</span>
                   </button>
@@ -35,7 +35,7 @@ const Landing: React.FC = () => {
                 <div className="mt-10 flex items-center gap-4 text-sm text-text-muted">
                    <div className="flex -space-x-2">
                         {[1, 2, 3].map((i) => (
-                            <div key={i} className="size-8 rounded-full border-2 border-background-light bg-gray-200 bg-cover bg-center" style={{ backgroundImage: `url('https://picsum.photos/32/32?random=${i}')` }} />
+                            <div key={i} className="size-8 rounded-full border-2 border-background-light dark:border-surface-dark bg-gray-200 dark:bg-gray-700 bg-cover bg-center" style={{ backgroundImage: `url('https://picsum.photos/32/32?random=${i}')` }} />
                         ))}
                     </div>
                   <p>Used by <span className="font-bold text-text-main">2,000+</span> urban planners</p>
@@ -45,14 +45,14 @@ const Landing: React.FC = () => {
               {/* Hero Image / Composition */}
               <div className="relative lg:h-auto">
                 <div className="absolute -top-10 -right-10 size-64 rounded-full bg-primary/20 blur-3xl pointer-events-none"></div>
-                <div className="absolute -bottom-10 -left-10 size-64 rounded-full bg-blue-400/20 blur-3xl pointer-events-none"></div>
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-2xl border border-white/20 group">
+                <div className="absolute -bottom-10 -left-10 size-64 rounded-full bg-blue-400/20 dark:bg-blue-900/20 blur-3xl pointer-events-none"></div>
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-2xl border border-white/20 dark:border-white/10 group">
                   <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" 
                     style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDFXXaLvynFtAcb_csL9JOj1zrRBRj50XA4fN3Jg0wZKckh6aWYabDFg_pZUocA4BM2NVF9pOmC1QKAUx_5GWAn-I6aqrpqkJIaRcdn57nNWgleL2TqiBZjQc2kX6upoYbkoYS8WupX5-tSebZwNIMU9LlU_5DzAFwZvx_ooUdAiGdpLbCqKu2Is50hmyw-p_SAC9ZfnBqGU-2_GTmhe7ZTWvuRXFIu2alXFORUh3c611ubzZJccnhwyGjFdcYEpcOIOnwyMryGtA')" }}
                   />
                   {/* Floating Card */}
-                  <div className="absolute bottom-6 left-6 right-6 rounded-xl bg-white/90 backdrop-blur-md p-4 border border-white/20 shadow-lg">
+                  <div className="absolute bottom-6 left-6 right-6 rounded-xl bg-white/90 dark:bg-surface-dark/90 backdrop-blur-md p-4 border border-white/20 dark:border-white/10 shadow-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="flex size-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -65,11 +65,11 @@ const Landing: React.FC = () => {
                         <p className="text-xs text-text-muted">Air Quality</p>
                         <p className="text-lg font-bold text-primary">98 AQI</p>
                       </div>
-                      <div className="flex-1 border-l border-gray-200 pl-4">
+                      <div className="flex-1 border-l border-gray-200 dark:border-gray-700 pl-4">
                         <p className="text-xs text-text-muted">Green Cover</p>
                         <p className="text-lg font-bold text-primary">+24%</p>
                       </div>
-                      <div className="flex-1 border-l border-gray-200 pl-4">
+                      <div className="flex-1 border-l border-gray-200 dark:border-gray-700 pl-4">
                         <p className="text-xs text-text-muted">Energy</p>
                         <p className="text-lg font-bold text-primary">Net Zero</p>
                       </div>
@@ -82,41 +82,41 @@ const Landing: React.FC = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-16 sm:py-24 bg-white">
+        <section className="py-16 sm:py-24 bg-white dark:bg-surface-dark">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight mb-4 sm:text-4xl">Powerful Planning Tools</h2>
+              <h2 className="text-3xl font-bold tracking-tight mb-4 sm:text-4xl text-text-main">Powerful Planning Tools</h2>
               <p className="text-lg text-text-muted">Everything you need to visualize, analyze, and implement sustainable urban solutions.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Feature 1 */}
-                <Link to="/map" className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e7f3e9] bg-background-light p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
+                <Link to="/map" className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e7f3e9] dark:border-[#2a4d31] bg-background-light dark:bg-background-dark p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
                   <div className="mb-6 inline-flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-[#0d1b10] transition-colors">
                     <span className="material-symbols-outlined text-3xl">map</span>
                   </div>
-                  <h3 className="mb-3 text-xl font-bold">Interactive Map</h3>
+                  <h3 className="mb-3 text-xl font-bold text-text-main">Interactive Map</h3>
                   <p className="text-base leading-relaxed text-text-muted">Navigate real-world terrain with overlaid sustainability zones. Import GIS data and visualize zoning changes instantly.</p>
                   <div className="mt-auto pt-6 flex items-center gap-1 text-sm font-bold text-primary group-hover:underline">
                       Start Mapping <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   </div>
                 </Link>
                 {/* Feature 2 */}
-                <Link to="/transform" className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e7f3e9] bg-background-light p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
+                <Link to="/transform" className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e7f3e9] dark:border-[#2a4d31] bg-background-light dark:bg-background-dark p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
                   <div className="mb-6 inline-flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-[#0d1b10] transition-colors">
                     <span className="material-symbols-outlined text-3xl">auto_fix_high</span>
                   </div>
-                  <h3 className="mb-3 text-xl font-bold">AI-Powered Before/After</h3>
+                  <h3 className="mb-3 text-xl font-bold text-text-main">AI-Powered Before/After</h3>
                   <p className="text-base leading-relaxed text-text-muted">Generate photorealistic renders of green infrastructure instantly. See how a parking lot transforms into a park.</p>
                   <div className="mt-auto pt-6 flex items-center gap-1 text-sm font-bold text-primary group-hover:underline">
                       Try AI Render <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   </div>
                 </Link>
                 {/* Feature 3 */}
-                <Link to="/dashboard" className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e7f3e9] bg-background-light p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
+                <Link to="/dashboard" className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#e7f3e9] dark:border-[#2a4d31] bg-background-light dark:bg-background-dark p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
                   <div className="mb-6 inline-flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-[#0d1b10] transition-colors">
                     <span className="material-symbols-outlined text-3xl">monitoring</span>
                   </div>
-                  <h3 className="mb-3 text-xl font-bold">Impact Dashboard</h3>
+                  <h3 className="mb-3 text-xl font-bold text-text-main">Impact Dashboard</h3>
                   <p className="text-base leading-relaxed text-text-muted">Track carbon reduction, air quality improvements, and energy savings with real-time analytics.</p>
                   <div className="mt-auto pt-6 flex items-center gap-1 text-sm font-bold text-primary group-hover:underline">
                       View Analytics <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -126,7 +126,7 @@ const Landing: React.FC = () => {
           </div>
         </section>
       </main>
-      <footer className="bg-background-light border-t border-[#e7f3e9] py-10">
+      <footer className="bg-background-light dark:bg-surface-dark border-t border-[#e7f3e9] dark:border-[#2a4d31] py-10">
           <div className="mx-auto max-w-7xl px-6 text-center text-sm text-text-muted">
               © 2024 Sustainable City Planner. All rights reserved.
           </div>

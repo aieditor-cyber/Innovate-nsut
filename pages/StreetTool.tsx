@@ -29,19 +29,19 @@ const StreetTool: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background-light font-display">
+    <div className="flex min-h-screen flex-col bg-background-light dark:bg-background-dark font-display">
       <Navbar />
       <main className="flex-grow flex flex-col items-center py-8 px-6 lg:px-12 w-full max-w-[1440px] mx-auto gap-8">
         
         <div className="w-full max-w-[1200px] flex flex-col gap-2">
            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-text-main">Street Transformation Tool</h1>
-           <p className="text-gray-500 max-w-2xl font-body">Visualize urban sustainability improvements instantly. Upload a street photo and apply green interventions to see the potential impact.</p>
+           <p className="text-gray-500 dark:text-text-muted max-w-2xl font-body">Visualize urban sustainability improvements instantly. Upload a street photo and apply green interventions to see the potential impact.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row w-full max-w-[1200px] gap-6 items-start">
            {/* Visualizer */}
            <div className="flex-1 w-full flex flex-col gap-4">
-              <div className="relative w-full aspect-[4/3] bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
+              <div className="relative w-full aspect-[4/3] bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden shadow-sm group">
                  {isGenerating && (
                     <div className="absolute inset-0 z-20 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center text-white">
                         <span className="material-symbols-outlined text-4xl animate-spin mb-2">autorenew</span>
@@ -56,10 +56,10 @@ const StreetTool: React.FC = () => {
                  />
               </div>
 
-              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-dashed border-[#cfe7d3]">
+              <div className="flex items-center justify-between bg-white dark:bg-surface-dark p-4 rounded-xl border border-dashed border-[#cfe7d3] dark:border-[#2a4d31]">
                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-gray-400">add_photo_alternate</span>
-                    <span className="text-sm text-gray-600">Want to try another street?</span>
+                    <span className="material-symbols-outlined text-gray-400 dark:text-text-muted">add_photo_alternate</span>
+                    <span className="text-sm text-gray-600 dark:text-text-muted">Want to try another street?</span>
                  </div>
                  <button className="text-sm font-bold text-primary hover:text-primary/80">Upload New</button>
               </div>
@@ -67,10 +67,10 @@ const StreetTool: React.FC = () => {
 
            {/* Controls */}
            <div className="w-full lg:w-[400px] flex flex-col gap-6">
-              <div className="bg-white rounded-xl shadow-sm border border-[#e7f3e9] p-6 flex flex-col gap-6">
-                 <div className="flex items-center justify-between pb-2 border-b border-[#e7f3e9]">
+              <div className="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-[#e7f3e9] dark:border-[#2a4d31] p-6 flex flex-col gap-6">
+                 <div className="flex items-center justify-between pb-2 border-b border-[#e7f3e9] dark:border-[#2a4d31]">
                     <h2 className="text-xl font-bold text-text-main">Interventions</h2>
-                    <span className="material-symbols-outlined text-gray-400">tune</span>
+                    <span className="material-symbols-outlined text-gray-400 dark:text-text-muted">tune</span>
                  </div>
                  
                  <div className="flex flex-col gap-3">
@@ -82,13 +82,13 @@ const StreetTool: React.FC = () => {
                     <Toggle label="Vertical Gardens" icon="potted_plant" checked={toggles.gardens} onChange={() => handleToggle('gardens')} />
                  </div>
 
-                 <div className="pt-4 border-t border-[#e7f3e9]">
+                 <div className="pt-4 border-t border-[#e7f3e9] dark:border-[#2a4d31]">
                     <div className="flex justify-between items-center mb-2">
                        <span className="font-bold text-sm text-text-main">Green Density</span>
                        <span className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded">High</span>
                     </div>
-                    <input type="range" className="w-full accent-primary h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" min="1" max="100" defaultValue="75" />
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <input type="range" className="w-full accent-primary h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer" min="1" max="100" defaultValue="75" />
+                    <div className="flex justify-between text-xs text-gray-400 dark:text-text-muted mt-1">
                        <span>Sparse</span>
                        <span>Dense</span>
                     </div>
@@ -132,27 +132,27 @@ const StreetTool: React.FC = () => {
 };
 
 const Toggle = ({ label, icon, checked, onChange }: any) => (
-   <label className="flex items-center justify-between p-3 rounded-lg hover:bg-background-light transition-colors cursor-pointer group select-none">
+   <label className="flex items-center justify-between p-3 rounded-lg hover:bg-background-light dark:hover:bg-background-dark transition-colors cursor-pointer group select-none">
       <div className="flex items-center gap-3">
-         <span className="material-symbols-outlined text-gray-500 group-hover:text-primary transition-colors">{icon}</span>
+         <span className="material-symbols-outlined text-gray-500 dark:text-text-muted group-hover:text-primary transition-colors">{icon}</span>
          <span className="font-medium text-text-main">{label}</span>
       </div>
       <div className="relative inline-flex items-center cursor-pointer">
          <input type="checkbox" className="sr-only peer" checked={checked} onChange={onChange} />
-         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+         <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
       </div>
    </label>
 );
 
 const MetricBox = ({ icon, label, value, sub, subColor, iconColor }: any) => (
-   <div className="bg-white p-6 rounded-xl border border-[#e7f3e9] shadow-sm flex flex-col items-start gap-2 hover:border-primary/50 transition-colors">
-      <div className={`${iconColor} p-2 rounded-lg mb-1`}>
+   <div className="bg-white dark:bg-surface-dark p-6 rounded-xl border border-[#e7f3e9] dark:border-[#2a4d31] shadow-sm flex flex-col items-start gap-2 hover:border-primary/50 dark:hover:border-primary/30 transition-colors">
+      <div className={`${iconColor} dark:bg-opacity-20 p-2 rounded-lg mb-1`}>
          <span className="material-symbols-outlined">{icon}</span>
       </div>
-      <span className="text-sm text-gray-500 font-body">{label}</span>
+      <span className="text-sm text-gray-500 dark:text-text-muted font-body">{label}</span>
       <div className="flex items-baseline gap-2">
          <span className="text-2xl font-bold text-text-main transition-all duration-300">{value}</span>
-         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${subColor}`}>{sub}</span>
+         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${subColor} dark:bg-opacity-30`}>{sub}</span>
       </div>
    </div>
 );
