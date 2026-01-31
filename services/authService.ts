@@ -41,7 +41,12 @@ export const signInWithGoogle = async (): Promise<User> => {
 export const signInWithEmail = async (email: string, password: string): Promise<User> => {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
+    const user = result.user;
+    
+    // Save user data to Firestore
+    await saveUserData(user);
+    
+    return user;
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -90,34 +95,61 @@ export const onAuthChange = (callback: (user: User | null) => void) => {
 };
 
 /**
- * Save user data to Firestore
+ * Save user data to Firestore following the schema
  */
 const saveUserData = async (user: User, displayName?: string): Promise<void> => {
   try {
-    const userRef = doc(db, 'users', user.uid);
+    const userRef = doc(db, 'users_table', user.uid);
     
     // Check if user document already exists
     const userSnap = await getDoc(userRef);
     
+    const now = new Date();
+    const isoTimestamp = now.toISOString();
+
     if (!userSnap.exists()) {
-      // Create new user document
+      // Parse display name into first and last name
+      const nameParts = (displayName || user.displayName || 'User').split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Create new user document with schema structure
       await setDoc(userRef, {
-        uid: user.uid,
+        id: user.uid,
         email: user.email,
-        displayName: displayName || user.displayName || 'User',
-        photoURL: user.photoURL || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
+        account: {
+          isEmailVerified: user.emailVerified,
+          joinedAt: isoTimestamp,
+          lastLogin: isoTimestamp
+        },
+        preferences: {
+          language: 'en',
+          theme: 'dark'
+        },
+        profile: {
+          bio: '',
+          city: '',
+          country: '',
+          firstName: firstName,
+          lastName: lastName,
+          role: 'User',
+          state: '',
+          photoURL: user.photoURL || null
+        }
       });
+      console.log('✅ New user document created:', user.uid);
     } else {
-      // Update lastLogin timestamp
+      // Update lastLogin timestamp for existing user
       await setDoc(userRef, {
-        lastLogin: new Date().toISOString(),
+        account: {
+          lastLogin: isoTimestamp
+        }
       }, { merge: true });
+      console.log('✅ User login updated:', user.uid);
     }
   } catch (error: any) {
-    console.error('Error saving user data:', error);
+    console.error('❌ Error saving user data:', error);
+    throw error;
   }
 };
 
@@ -126,7 +158,7 @@ const saveUserData = async (user: User, displayName?: string): Promise<void> => 
  */
 export const getUserData = async (uid: string) => {
   try {
-    const userRef = doc(db, 'users', uid);
+    const userRef = doc(db, 'users_table', uid);
     const userSnap = await getDoc(userRef);
     
     if (userSnap.exists()) {

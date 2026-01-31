@@ -71,13 +71,16 @@ const Profile: React.FC = () => {
     return null;
   }
 
-  const displayName = user.displayName || profile?.displayName || 'User';
+  const displayName = `${user?.displayName || profile?.profile?.firstName || 'User'} ${profile?.profile?.lastName || ''}`.trim();
   const email = user.email || '';
-  const photoURL = user.photoURL;
-  const joinDate = user.metadata?.creationTime || new Date().toISOString();
-  const bio = profile?.bio || 'Welcome to TerraVision';
-  const location = profile?.location || 'Location not set';
-  const role = profile?.role || 'User';
+  const photoURL = user.photoURL || profile?.profile?.photoURL;
+  const joinDate = profile?.account?.joinedAt || user.metadata?.creationTime || new Date().toISOString();
+  const bio = profile?.profile?.bio || 'Welcome to TerraVision';
+  const location = profile?.profile?.city ? `${profile.profile.city}, ${profile.profile.state}` : 'Location not set';
+  const role = profile?.profile?.role || 'User';
+  const accountType = user.providerData[0]?.providerId === 'google.com'
+    ? 'Google OAuth'
+    : 'Email & Password';
 
   const initials = displayName
     .split(' ')
@@ -149,15 +152,15 @@ const Profile: React.FC = () => {
               <div className="p-3 rounded border border-[var(--color-border-light)] text-sm bg-[var(--color-background-light)] dark:bg-[var(--color-background-dark)]">
                 <div className="text-xs text-[var(--color-text-muted)]">Account Type</div>
                 <div className="font-semibold">
-                  {user.providerData[0]?.providerId === 'google.com'
-                    ? 'Google OAuth'
-                    : 'Email & Password'}
+                  {accountType}
                 </div>
               </div>
 
               <div className="p-3 rounded border border-[var(--color-border-light)] text-sm bg-[var(--color-background-light)] dark:bg-[var(--color-background-dark)]">
-                <div className="text-xs text-[var(--color-text-muted)]">UID</div>
-                <div className="font-semibold text-xs break-all">{user.uid}</div>
+                <div className="text-xs text-[var(--color-text-muted)]">Email Verified</div>
+                <div className="font-semibold">
+                  {profile?.account?.isEmailVerified ? 'Yes' : 'No'}
+                </div>
               </div>
             </aside>
           </section>
